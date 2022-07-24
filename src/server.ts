@@ -3,9 +3,14 @@
 
 import express, { Express, Request, Response } from 'express';
 import quoteRouter from './router/quotes';
+import cors from 'cors';
+import * as dotenv from 'dotenv';
+dotenv.config();
 
 const app: Express = express();
 const PORT = 5001;
+
+app.use(cors());
 
 app.get('/', async (_req: Request, res: Response) => {
   res.send('api');

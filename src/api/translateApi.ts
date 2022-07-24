@@ -10,12 +10,22 @@ type Translation = {
   target_lang: Language;
 };
 
-const getTranslation = async (text: string, language: Language) => {
+type TranslationFunc = (
+  text: string,
+  languague: Language
+) => Promise<Translation>;
+
+const getTranslation: TranslationFunc = async (text, language) => {
   const params = new URLSearchParams();
-  params.append('auth_key', '201e5e2a-d4ba-f435-d70d-22804f8c484a:fx');
+  params.append('auth_key', process.env['DeeplAuthKey'] || '');
   params.append('text', text);
   params.append('target_lang', language);
-  let translation: Translation | null;
+  let translation: Translation = {
+    detected_source_language: 'EN',
+    target_lang: language,
+    text: '',
+    translation: '',
+  };
 
   try {
     const baseUrl = 'https://api-free.deepl.com/v2/translate?';
@@ -26,6 +36,7 @@ const getTranslation = async (text: string, language: Language) => {
         'Access-Control-Allow-Origin': '*',
       },
     });
+
     const translationData = data.translations[0];
     translation = {
       text,
@@ -38,17 +49,27 @@ const getTranslation = async (text: string, language: Language) => {
   } catch (error) {
     console.log(error);
   }
+  return translation;
 };
 
-const getTranslations = async (text: string, languages: Language[]) => {
+type TranslationsFunc = (
+  text: string,
+  language: Language[]
+) => Promise<Translation[]>;
+
+const getTranslations: TranslationsFunc = async (text, languages) => {
   const translations: Translation[] = [];
-  const languagePromise = languages.map(
-    async (language) => await getTranslation(text, language)
+  const languagePromise = languages.map((language) =>
+    getTranslation(text, language)
   );
-  await Promise.all(languagePromise).then((values) => {
-    values.forEach((val) => val && translations.push());
-  });
-  console.log(translations);
+  await Promise.all(languagePromise)
+    .then((values) => {
+      values.forEach((res) => translations.push(res));
+    })
+    .catch((error) => {
+      console.log(error);
+    });
+
   return translations;
 };
 
